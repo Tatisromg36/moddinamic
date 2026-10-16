@@ -1,0 +1,240 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Bitácora Modelamiento Dinámico</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: barra fija con las 4 entregas como pestañas; cada sección ocupa el alto de la pantalla con su simulación embebida. Un solo look oscuro, del humedal. */
+:root{
+  --bg:#0c1310; --surface:#131c18; --line:#24332c; --fg:#e3ebe5; --muted:#8ea197; --accent:#d6b25e; --accent-ink:#1a1407;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--f-body);}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 28px;padding-block:14px 0}
+.brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+.brand h1{margin:0;font:700 22px/1.1 var(--f-display);letter-spacing:-.01em;text-wrap:balance}
+.brand span{font:12px/1.3 var(--f-mono);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-top:12px;width:100%}
+nav.tabs::-webkit-scrollbar{display:none}
+.tab{appearance:none;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;
+  padding:8px 14px 10px;text-align:left;display:flex;flex-direction:column;gap:1px;white-space:nowrap;font:inherit}
+.tab small{font:11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase}
+.tab b{font:500 15px var(--f-body);color:inherit}
+.tab:hover{color:var(--fg)}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.tab[aria-selected="true"] small{color:var(--accent)}
+.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+main{padding-block:18px 28px}
+.panel{display:flex;flex-direction:column;gap:14px}
+.head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 24px}
+.head > div{min-width:0;max-width:68ch}
+.eyebrow{font:12px var(--f-mono);color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+.head h2{margin:4px 0 6px;font:700 clamp(24px,3.4vw,34px)/1.1 var(--f-display);letter-spacing:-.015em;text-wrap:balance}
+.head p{margin:0;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:6px;border:1px solid var(--line);
+  color:var(--fg);text-decoration:none;font:500 14px var(--f-body);background:var(--surface);white-space:nowrap;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+.stage{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#000;
+  height:calc(100vh - 250px);min-height:520px}
+.stage.tall{height:calc(100vh - 140px);min-height:620px}
+.stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font:13px var(--f-mono)}
+
+.figure{border:1px solid var(--line);border-radius:8px;background:#fff;overflow:auto;max-height:calc(100vh - 230px)}
+.figure img{display:block;width:100%;height:auto;cursor:zoom-in}
+.figure.zoom img{width:1800px;max-width:none;cursor:zoom-out}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.legend div{border-top:2px solid var(--line);padding-top:8px;min-width:0}
+.legend b{display:block;font:500 14px var(--f-body)}
+.legend span{color:var(--muted);font-size:13px}
+.sub{margin-top:18px}
+.sub h3{margin:0 0 4px;font:700 20px var(--f-display)}
+.sub p{margin:0 0 12px;color:var(--muted);max-width:68ch}
+
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.segbtn{appearance:none;font:500 14px var(--f-body);color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}
+.segbtn:hover{color:var(--fg)}
+.segbtn[aria-pressed="true"]{color:var(--accent-ink);background:var(--accent);border-color:var(--accent)}
+.segbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sub-panel{display:flex;flex-direction:column;gap:10px}
+.subhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 20px}
+.subhead p{margin:0;color:var(--muted);max-width:68ch;min-width:0}
+.empty{border:1px dashed var(--line);border-radius:8px;padding:48px 20px;text-align:center;color:var(--muted);font:13px var(--f-mono)}
+.video{display:flex;align-items:center;gap:16px;padding:14px 18px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);text-decoration:none}
+.video:hover{border-color:var(--accent)}
+.video:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.play{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:16px;padding-left:3px}
+.vtxt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.vtxt small{font:11px var(--f-mono);color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.vtxt b{font:500 15px var(--f-body)}
+.vtxt span{font:12px var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
+.go{color:var(--muted);font-size:18px}
+footer{padding-block:0 24px;color:var(--muted);font:12px var(--f-mono)}
+@supports (height:100svh){ .stage{height:calc(100svh - 250px)} }
+@media (min-width:641px) and (max-width:1024px){
+  .stage{height:calc(100vh - 210px);min-height:560px}
+  @supports (height:100svh){ .stage{height:calc(100svh - 210px)} }
+}
+@media (max-width:640px){
+  .bar{padding-block:10px 0}
+  .brand h1{font-size:18px}
+  nav.tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:6px;overflow:visible}
+  .tab{white-space:normal;padding:7px 8px 8px;min-width:0}
+  .tab b{font-size:13.5px;line-height:1.25}
+  .tab small{font-size:10px}
+  main{padding-block:14px 20px}
+  .panel{gap:12px}
+  .head h2{font-size:22px}
+  .head p,.subhead p{font-size:14px}
+  .head > div{max-width:none}
+  .head .btn,.subhead .btn{width:100%;justify-content:center}
+  .seg{display:grid;grid-template-columns:1fr}
+  .segbtn{text-align:center;white-space:normal}
+  .stage{height:calc(100vh - 150px);min-height:460px;border-radius:6px}
+  @supports (height:100svh){ .stage{height:calc(100svh - 150px)} }
+  .figure{max-height:none;border-radius:6px}
+  .figure.zoom img{width:1400px}
+  .video{padding:12px 14px;gap:12px}
+  .play{width:38px;height:38px;font-size:14px}
+}
+@media (prefers-reduced-motion:no-preference){ .panel{animation:in .25s ease-out} @keyframes in{from{opacity:.4;transform:translateY(4px)}} }
+@supports (height:100svh){ .stage.tall{height:calc(100svh - 140px)} }
+@media (max-width:640px){ .stage.tall{height:calc(100vh - 110px);min-height:520px} @supports (height:100svh){ .stage.tall{height:calc(100svh - 110px)} } }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand">
+        <h1>Bitácora Modelamiento Dinámico</h1>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button class="tab" role="tab" id="t-nico" aria-controls="nico" data-id="nico"><small>Nico</small><b>Simulación biocomputacional</b></button>
+      <button class="tab" role="tab" id="t-mauricio" aria-controls="mauricio" data-id="mauricio"><small>Mauricio</small><b>Redes tecnológicas</b></button>
+      <button class="tab" role="tab" id="t-juancarlos" aria-controls="juancarlos" data-id="juancarlos"><small>Juan Carlos</small><b>Dinámicas ecosistémicas</b></button>
+      <button class="tab" role="tab" id="t-kamian" aria-controls="kamian" data-id="kamian"><small>Kamian</small><b>Actantes y flujos</b></button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel" id="nico" role="tabpanel" aria-labelledby="t-nico" hidden>
+    <div class="head">
+      <div>
+        <div class="eyebrow">Nico · Simulación biocomputacional</div>
+        <h2>Red biótica y corredor María Paz</h2>
+        <p>Dos simulaciones: la red de especies de Kennedy a partir de fuentes abiertas, y el relieve de intensidades del corredor Corabastos–María Paz–Humedal La Vaca. Elige cuál ver.</p>
+      </div>
+    </div>
+    <div class="seg" role="group" aria-label="Simulación">
+      <button class="segbtn" data-sub="nico-a" aria-pressed="true">Kennedy: territorio y red biótica</button>
+      <button class="segbtn" data-sub="nico-b" aria-pressed="false">Corredor María Paz · Relieve de intensidades</button>
+    </div>
+    <div class="sub-panel" id="nico-a">
+      <div class="subhead"><p>Síntesis de iNaturalist, GBIF, Censo de Arbolado y la Red Interinstitucional de Biodiversidad de Bogotá. Filtra por reino y zona, o toca una especie para ver su ficha.</p><a class="btn" href="m/kennedy-red-biotica.html" target="_blank" rel="noopener">Pantalla completa ↗</a></div>
+      <div class="stage tall"><div class="loading">Cargando red biótica…</div><iframe title="Kennedy: red biótica" data-src="m/kennedy-red-biotica.html" allow="fullscreen"></iframe></div>
+    </div>
+    <div class="sub-panel" id="nico-b" hidden>
+      <div class="subhead"><p>Cartografía 3D de actividad, ambulantes, tráfico, residuo en calle y deterioro del humedal a lo largo de 24 horas o 7 días.</p><a class="btn" href="m/corredor-maria-paz.html" target="_blank" rel="noopener">Pantalla completa ↗</a></div>
+      <div class="stage"><div class="loading">Cargando relieve…</div><iframe title="Corredor María Paz" data-src="m/corredor-maria-paz.html" allow="fullscreen"></iframe></div>
+    </div>
+  </section>
+
+  <section class="panel" id="mauricio" role="tabpanel" aria-labelledby="t-mauricio" hidden>
+    <div class="head">
+      <div>
+        <div class="eyebrow">Mauricio · Redes tecnológicas</div>
+        <h2>Diagrama causal</h2>
+      </div>
+      <a class="btn primary" href="m/diagrama-flujos.jpg" target="_blank" rel="noopener">Ver imagen original ↗</a>
+    </div>
+    <div class="figure" id="fig"><img src="m/diagrama-flujos.jpg" alt="Diagrama de Forrester: suelo retenido, precio del suelo, área EEP conservada, servicios ecosistémicos, carga en tránsito en Corabastos, congestión vehicular y residuos orgánicos acumulados"></div>
+  </section>
+
+  <section class="panel" id="juancarlos" role="tabpanel" aria-labelledby="t-juancarlos" hidden>
+    <div class="head">
+      <div>
+        <div class="eyebrow">Juan Carlos · Dinámicas ecosistémicas</div>
+        <h2>Humedal La Vaca</h2>
+        <p>Simulación del humedal: espejo de agua, oxígeno, nutrientes y biodiversidad nativa, con la red de especies registrada en iNaturalist y los efectos en cadena de cada corrida.</p>
+      </div>
+      <a class="btn primary" href="m/humedal-la-vaca.html" target="_blank" rel="noopener">Pantalla completa ↗</a>
+    </div>
+    <div class="stage"><div class="loading">Cargando simulación…</div><iframe title="Humedal La Vaca" data-src="m/humedal-la-vaca.html" allow="fullscreen; autoplay"></iframe></div>
+    <a class="video" href="https://youtu.be/NSXQd0wb_ls" target="_blank" rel="noopener">
+      <span class="play" aria-hidden="true">▶</span>
+      <span class="vtxt"><small>Video · YouTube</small><b>Ver el video de la sección</b><span>youtu.be/NSXQd0wb_ls</span></span>
+      <span class="go" aria-hidden="true">↗</span>
+    </a>
+  </section>
+
+  <section class="panel" id="kamian" role="tabpanel" aria-labelledby="t-kamian" hidden>
+    <div class="head">
+      <div>
+        <div class="eyebrow">Kamian · Actantes y flujos</div>
+        <h2>Actantes y flujos</h2>
+      </div>
+    </div>
+    <a class="video" href="https://youtu.be/AEHpQxGhy1M?si=_4VAT_MNX-tCPg0C" target="_blank" rel="noopener">
+      <span class="play" aria-hidden="true">▶</span>
+      <span class="vtxt"><small>Video · YouTube</small><b>Ver el video de la sección</b><span>youtu.be/AEHpQxGhy1M</span></span>
+      <span class="go" aria-hidden="true">↗</span>
+    </a>
+  </section>
+</main>
+<footer class="wrap">Modelamiento dinámico · Kennedy, Bogotá</footer>
+
+<script>
+(function(){
+  const ids=["nico","mauricio","juancarlos","kamian"];
+  const tabs=[...document.querySelectorAll(".tab")];
+  function load(scope){
+    scope.querySelectorAll("iframe[data-src]").forEach(f=>{
+      if(f.closest("[hidden]")||f.getAttribute("src")) return;
+      f.addEventListener("load",()=>{const l=f.previousElementSibling; if(l) l.hidden=true;},{once:true});
+      f.src=f.dataset.src;
+    });
+  }
+  function show(id){
+    if(!ids.includes(id)) id=ids[0];
+    tabs.forEach(t=>t.setAttribute("aria-selected", String(t.dataset.id===id)));
+    ids.forEach(s=>{ document.getElementById(s).hidden = s!==id; });
+    load(document.getElementById(id));
+    try{ history.replaceState(null,"","#"+id); }catch(e){}
+    try{ localStorage.setItem("kennedy-tab2",id); }catch(e){}
+    document.getElementById("t-"+id).scrollIntoView({block:"nearest",inline:"nearest"});
+    window.scrollTo(0,0);
+  }
+  tabs.forEach(t=>t.addEventListener("click",()=>show(t.dataset.id)));
+  document.querySelector(".tabs").addEventListener("keydown",e=>{
+    const i=tabs.findIndex(t=>t.getAttribute("aria-selected")==="true");
+    if(e.key==="ArrowRight"||e.key==="ArrowLeft"){
+      const n=tabs[(i+(e.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length];
+      n.focus(); show(n.dataset.id);
+    }
+  });
+  const segs=[...document.querySelectorAll(".segbtn")];
+  segs.forEach(b=>b.addEventListener("click",()=>{
+    segs.forEach(o=>{ o.setAttribute("aria-pressed",String(o===b)); document.getElementById(o.dataset.sub).hidden = o!==b; });
+    load(document.getElementById("nico"));
+  }));
+  document.getElementById("fig").addEventListener("click",function(){this.classList.toggle("zoom")});
+  let start=(location.hash||"").slice(1);
+  if(!ids.includes(start)){ try{ start=localStorage.getItem("kennedy-tab2")||""; }catch(e){ start=""; } }
+  show(start);
+})();
+</script>
+
+</body></html>
